@@ -6,28 +6,43 @@ import (
 	"os"
 	"path"
 	"strings"
+	"unicode/utf8"
 )
 
-func numberOfCharacters(file *os.File) int {
+func numberOfBytes(reader *bufio.Reader) int {
 	var count int = 0
-	var buffer []byte = make([]byte, 1024)
 
 	for {
-		n, err := file.Read(buffer)
+		line, err := reader.ReadString('\n')
 
 		if err != nil {
 			break
 		}
 
-		count += n
+		count += len(line)
 	}
 
 	return count
 }
 
-func numberOfWords(file *os.File) int {
+func numberOfCharacters(reader *bufio.Reader) int {
 	var count int = 0
-	var reader = bufio.NewReader(file)
+
+	for {
+		line, err := reader.ReadString('\n')
+
+		if err != nil {
+			break
+		}
+
+		count += utf8.RuneCountInString(line)
+	}
+
+	return count
+}
+
+func numberOfWords(reader *bufio.Reader) int {
+	var count int = 0
 
 	for {
 		line, err := reader.ReadString('\n')
@@ -42,9 +57,8 @@ func numberOfWords(file *os.File) int {
 	return count
 }
 
-func numberOfLines(file *os.File) int {
+func numberOfLines(reader *bufio.Reader) int {
 	var count int = 0
-	var reader = bufio.NewReader(file)
 
 	for {
 		_, err := reader.ReadString('\n')
@@ -59,6 +73,16 @@ func numberOfLines(file *os.File) int {
 	return count
 }
 
+func printResults(filename string, result int) {
+	var displayFilename string = filename
+	if filename != "" {
+		displayFilename = path.Base(filename)
+	}
+
+	fmt.Println(result, " ", displayFilename)
+
+}
+
 func main() {
 	args := os.Args[1:] // Get the command line arguments excluding the program name
 
@@ -71,7 +95,7 @@ func main() {
 	flags := make(map[string]bool) // Create a map to store the flags
 
 	// Read file name as the second argument
-	filename := "" // Create a variable to store the file name
+	filename := ""
 
 	// Loop through the arguments
 	for _, arg := range args {
@@ -79,35 +103,49 @@ func main() {
 		if arg[0] == '-' {
 			// Loop through the flags
 			for _, flag := range arg[1:] {
-				flags[string(flag)] = true // Add the flag to the map
+				flags[string(flag)] = true
 			}
 		} else {
 			filename = arg // Store the file name
 		}
 	}
 
-	// Read file contents as a byte slice
-	if filename != "" {
-		file, err := os.Open(filename) // Open the file
+	var reader *bufio.Reader
+	if filename == "" {
+		reader = bufio.NewReader(os.Stdin)
+	} else {
+		file, err := os.Open(filename)
+
 		if err != nil {
-			fmt.Println("Error:", err)
+			fmt.Println("Error opening file")
 			os.Exit(1)
 		}
-		defer file.Close() // Close the file after the function returns
 
-		// Perform work depending on flags
-		var base = path.Base(filename)
-		if flags["l"] {
-			fmt.Println(numberOfLines(file), " ", base)
-		}
+		defer file.Close()
 
-		if flags["c"] {
-			fmt.Println(numberOfCharacters(file), " ", base)
-		}
+		reader = bufio.NewReader(file)
+	}
 
-		if flags["w"] {
-			fmt.Println(numberOfWords(file), " ", base)
-		}
+	// Perform work depending on flags
+
+	if flags["l"] {
+		var lines int = numberOfLines(reader)
+		printResults(filename, lines)
+	}
+
+	if flags["m"] {
+		var characters int = numberOfCharacters(reader)
+		printResults(filename, characters)
+	}
+
+	if flags["w"] {
+		var words int = numberOfWords(reader)
+		printResults(filename, words)
+	}
+
+	if flags["c"] {
+		var bytes int = numberOfBytes(reader)
+		printResults(filename, bytes)
 	}
 
 	os.Exit(0)
