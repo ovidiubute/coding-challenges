@@ -44,20 +44,16 @@ func numberOfWords(file *os.File) int {
 
 func numberOfLines(file *os.File) int {
 	var count int = 0
-	var buffer []byte = make([]byte, 1024)
+	var reader = bufio.NewReader(file)
 
 	for {
-		n, err := file.Read(buffer)
+		_, err := reader.ReadString('\n')
 
 		if err != nil {
 			break
 		}
 
-		for i := 0; i < n; i++ {
-			if buffer[i] == '\n' {
-				count++
-			}
-		}
+		count++
 	}
 
 	return count
