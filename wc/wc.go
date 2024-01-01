@@ -134,7 +134,8 @@ func main() {
 	}
 
 	if flags["m"] {
-		var characters int = numberOfCharacters(reader)
+		var characters = numberOfCharacters(reader)
+
 		printResults(filename, characters)
 	}
 
@@ -145,6 +146,7 @@ func main() {
 
 	if flags["c"] {
 		var bytes int = numberOfBytes(reader)
+
 		printResults(filename, bytes)
 	}
 
